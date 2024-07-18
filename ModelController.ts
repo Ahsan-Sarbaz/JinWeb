@@ -1,11 +1,8 @@
 import type { Controller } from "./Controller";
+import type { Model } from "./Model";
 
-export function isModelController<T>(controller: Controller | ModelController<T>): controller is ModelController<T> {
-    return (controller as ModelController<T>).find !== undefined;
-}
-
-export interface ModelController<T> {
-    find(key: any): T | undefined;
+export interface ModelController<T extends Model> {
+    model: T;
     index?(request: Request): Response;
     show?(request: Request, model: T): Response;
     create?(request: Request, model: T): Response;

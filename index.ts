@@ -1,5 +1,5 @@
 import { type Controller } from "./Controller";
-import { type ModelController, isModelController } from "./ModelController";
+import { type ModelController } from "./ModelController";
 import { Router } from "./Router";
 import { Model } from "./Model";
 
@@ -9,6 +9,10 @@ class User extends Model {
 
     constructor() {
         super();
+    }
+
+    find(id: number): User | undefined {
+        return users.find((user) => user.id === id);
     }
 }
 
@@ -23,19 +27,18 @@ for (let i = 0; i < 10; i++) {
 }
 
 class UserController implements ModelController<User> {
-    find(id: number): User | undefined {
-        return users.find((u) => u.id === id);
+    model: User;
+
+    constructor() {
+        this.model = new User();
     }
 
     index(request: Request): Response {
         return new Response(JSON.stringify(users));
     }
     show(request: Request, user: User): Response {
-        // get the user from the database
-        const u = users.filter((u) => u.id === user.id);
-
-        if (u.length > 0) {
-            return new Response(JSON.stringify(u[0]));
+        if (user) {
+            return new Response(JSON.stringify(user));
         } else {
             return new Response("Not found", { status: 404 });
         }
@@ -59,13 +62,26 @@ class UserController implements ModelController<User> {
 }
 
 const router = new Router();
-router.map("/users", new UserController());
+router.use(async (request: Request, params : Record<string, string>, next: () => Promise<Response>) =>{
+    console.log(request.method, request.url);
+    return await next();
+})
+
+router.group("/api", [async (request: Request, params : Record<string, string>, next: () => Promise<Response>) =>{
+    console.log('API is being called!');
+    return await next();
+}], group => {
+    group.mapModelController("/users", new UserController());
+})
 
 function home(request: Request, params: Record<string, string>): Response {
     return new Response("Hello World");
 }
 
-router.get("/", home);
+router.get("/", home, [async (request: Request, params : Record<string, string>, next: () => Promise<Response>) =>{
+    console.log('Home is being called!');
+    return await next();
+}]);
 
 Bun.serve({
     port: 8080,
